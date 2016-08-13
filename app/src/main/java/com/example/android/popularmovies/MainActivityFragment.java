@@ -32,9 +32,6 @@ import java.util.Arrays;
  */
 public class MainActivityFragment extends Fragment {
 
-    // This has been removed for the upload. Add your own if you would like to test it.
-    private final String MY_API_KEY = "";
-
     private MovieAdapter mMovieAdapter;
 
     public MainActivityFragment() {
@@ -157,7 +154,7 @@ public class MainActivityFragment extends Fragment {
                         .appendPath("discover")
                         .appendPath("movie")
                         .appendQueryParameter("sort_by", sortOrder)
-                        .appendQueryParameter("api_key", MY_API_KEY);
+                        .appendQueryParameter("api_key", BuildConfig.MOVIE_DB_API_KEY);
 
                 URL url = new URL(builder.build().toString());
 
