@@ -9,15 +9,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/gridview_movies"
-        android:columnWidth="90dp"
+        android:columnWidth="0dp"
         android:numColumns="auto_fit"
-        android:verticalSpacing="10dp"
+        android:verticalSpacing="0dp"
         android:horizontalSpacing="0dp"
         android:stretchMode="columnWidth"
-        android:gravity="center"
-        android:paddingLeft="38dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp">
+        android:gravity="center">
 
 
     </GridView>
