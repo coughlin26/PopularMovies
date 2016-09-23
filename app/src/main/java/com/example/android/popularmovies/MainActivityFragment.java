@@ -1,12 +1,12 @@
 package com.example.android.popularmovies;
 
-import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
-import android.util.Log;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,25 +14,41 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.example.android.popularmovies.data.MovieContract;
+import com.example.android.popularmovies.sync.PopularMoviesSyncAdapter;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private MovieAdapter mMovieAdapter;
+    private GridView mGridView;
+    private int mPosition = GridView.INVALID_POSITION;
+
+    private static final String SELECTED_KEY = "selected_key";
+
+    private static final int POPULAR_MOVIES_LOADER = 0;
+
+    private static final String[] MOVIE_COLUMNS = {
+            MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry._ID,
+            MovieContract.MovieEntry.COLUMN_TITLE,
+            MovieContract.MovieEntry.COLUMN_POSTER_LOC,
+            MovieContract.MovieEntry.COLUMN_DESC,
+            MovieContract.MovieEntry.COLUMN_USER_RATING,
+            MovieContract.MovieEntry.COLUMN_RELEASE_DATE
+    };
+
+    static final int COL_MOVIE_ID = 0;
+    static final int COL_TITLE = 1;
+    static final int COL_POSTER_LOC = 2;
+    static final int COL_DESC = 3;
+    static final int COL_USER_RATING = 4;
+    static final int COL_RELEASE_DATE = 5;
+
+    public interface Callback {
+        public void onItemSelected(Uri movieUri);
+    }
 
     public MainActivityFragment() {
     }
@@ -45,42 +61,39 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        mMovieAdapter = new MovieAdapter(getActivity(), null, 0);
+
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        Movie[] movies = {
-                new Movie("Null", "Null", "Null", "Null", "Null")
-        };
-
-        ArrayList<Movie> movieArrayList = new ArrayList<>(Arrays.asList(movies));
-
-        mMovieAdapter = new MovieAdapter(getActivity(), movieArrayList);
-
-        GridView gridView = (GridView) rootView.findViewById(R.id.gridview_movies);
-        gridView.setAdapter(mMovieAdapter);
-        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mGridView = (GridView) rootView.findViewById(R.id.gridview_movies);
+        mGridView.setAdapter(mMovieAdapter);
+        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String title = mMovieAdapter.getItem(position).title;
-                String description = mMovieAdapter.getItem(position).description;
-                String posterLocation = mMovieAdapter.getItem(position).posterLocation;
-                String userRating = "Average Rating: " + mMovieAdapter.getItem(position).userRating;
-                String releaseDate = "Release: " + mMovieAdapter.getItem(position).releaseDate;
-
-                Bundle extrasBundle = new Bundle();
-                extrasBundle.putString("EXTRA_TITLE", title);
-                extrasBundle.putString("EXTRA_DESCRIPTION", description);
-                extrasBundle.putString("EXTRA_POSTER", posterLocation);
-                extrasBundle.putString("EXTRA_USER_RATING", userRating);
-                extrasBundle.putString("EXTRA_RELEASE_DATE", releaseDate);
-
-
-                Intent detailIntent = new Intent(getActivity(), DetailActivity.class)
-                        .putExtras(extrasBundle);
-                startActivity(detailIntent);
+                Cursor cursor = (Cursor) parent.getItemAtPosition(position);
+                if (cursor != null) {
+                    String sortSetting = Utility.getPreferredSort(getActivity());
+                    ((Callback) getActivity())
+                            .onItemSelected(MovieContract.MovieEntry.buildMovieWithSort(
+                                    sortSetting, cursor.getString(COL_TITLE)
+                            ));
+                }
+                mPosition = position;
             }
         });
 
+        if (savedInstanceState != null && savedInstanceState.containsKey(SELECTED_KEY)) {
+            mPosition = savedInstanceState.getInt(SELECTED_KEY);
+        }
+
         return rootView;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        getLoaderManager().initLoader(POPULAR_MOVIES_LOADER, null, this);
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -95,12 +108,7 @@ public class MainActivityFragment extends Fragment {
     }
 
     private void updateMovies() {
-        FetchMoviesTask moviesTask = new FetchMoviesTask();
-        String sortOrder = PreferenceManager.getDefaultSharedPreferences(getActivity())
-                .getString(getString(R.string.pref_sort_key),
-                        getString(R.string.pref_sort_popular));
-
-        moviesTask.execute(sortOrder);
+        PopularMoviesSyncAdapter.syncImmediately(getActivity());
     }
 
     @Override
@@ -109,111 +117,36 @@ public class MainActivityFragment extends Fragment {
         updateMovies();
     }
 
-    public class FetchMoviesTask extends AsyncTask<String, Void, Movie[]> {
-        private final String LOG_TAG = FetchMoviesTask.class.getSimpleName();
-
-        private Movie[] getMoviesFromJson(String moviesJsonStr) throws JSONException {
-
-            JSONObject moviesJson = new JSONObject(moviesJsonStr);
-            JSONArray moviesArray = moviesJson.getJSONArray("results");
-
-            Movie[] movies = new Movie[moviesArray.length()];
-
-            for (int i = 0; i < moviesArray.length(); i++) {
-                JSONObject jsonMovie = moviesArray.getJSONObject(i);
-
-                movies[i] = new Movie(jsonMovie.getString("title"),
-                        jsonMovie.getString("overview"),
-                        jsonMovie.getString("poster_path"),
-                        jsonMovie.getString("vote_average"),
-                        jsonMovie.getString("release_date"));
-            }
-
-            return movies;
+    @Override
+    public void onSaveInstanceState(Bundle bundle) {
+        if (mPosition != GridView.INVALID_POSITION) {
+            bundle.putInt(SELECTED_KEY, mPosition);
         }
+        super.onSaveInstanceState(bundle);
+    }
 
-        @Override
-        protected Movie[] doInBackground(String... params) {
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        String sortOrder = "popularity.desc";
 
-            String movieJsonStr = null;
-            String sortOrder = null;
+        Uri popularMoviesUri = null;
 
-            if (params[0].equals(getString(R.string.pref_sort_popular))) {
-                sortOrder = "popularity.desc";
-            } else if (params[0].equals(getString(R.string.pref_sort_rating))) {
-                sortOrder = "vote_average.desc";
-            }
+        return new CursorLoader(getActivity(),
+                popularMoviesUri,
+                null,
+                null,
+                null,
+                sortOrder);
+    }
 
-            try {
-                Uri.Builder builder = new Uri.Builder();
-                builder.scheme("http")
-                        .authority("api.themoviedb.org")
-                        .appendPath("3")
-                        .appendPath("discover")
-                        .appendPath("movie")
-                        .appendQueryParameter("sort_by", sortOrder)
-                        .appendQueryParameter("api_key", BuildConfig.MOVIE_DB_API_KEY);
-
-                URL url = new URL(builder.build().toString());
-
-                Log.v(LOG_TAG, "The url is: " + url);
-
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                if (inputStream == null) {
-                    return null;
-                }
-
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    return null;
-                }
-
-                movieJsonStr = buffer.toString();
-            } catch (IOException e) {
-                Log.e("MovieFragment", "Error ", e);
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e("MovieFragment", "Error ", e);
-                    }
-                }
-            }
-
-            try {
-                return getMoviesFromJson(movieJsonStr);
-            } catch (JSONException e) {
-                Log.e(LOG_TAG, e.getMessage(), e);
-                e.printStackTrace();
-            }
-            return null;
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (mPosition != GridView.INVALID_POSITION) {
+            mGridView.smoothScrollToPosition(mPosition);
         }
+    }
 
-        @Override
-        protected void onPostExecute(Movie[] result) {
-            if (result != null) {
-                mMovieAdapter.clear();
-                for (Movie movie : result) {
-                    mMovieAdapter.add(movie);
-                }
-            }
-        }
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
     }
 }
