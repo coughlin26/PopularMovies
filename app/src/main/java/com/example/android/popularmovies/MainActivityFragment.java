@@ -76,7 +76,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     String sortSetting = Utility.getPreferredSort(getActivity());
                     ((Callback) getActivity())
                             .onItemSelected(MovieContract.MovieEntry.buildMovieWithSort(
-                                    sortSetting, cursor.getString(COL_TITLE)
+                                    sortSetting
                             ));
                 }
                 mPosition = position;
@@ -127,16 +127,12 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        String sortOrder = "popularity.desc";
-
-        Uri popularMoviesUri = null;
-
         return new CursorLoader(getActivity(),
-                popularMoviesUri,
+                MovieContract.MovieEntry.CONTENT_URI,
                 null,
                 null,
                 null,
-                sortOrder);
+                null);
     }
 
     @Override

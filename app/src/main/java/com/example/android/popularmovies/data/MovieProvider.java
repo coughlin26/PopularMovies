@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
+import android.util.Log;
 
 /**
  * Created by Matt on 9/8/2016.
@@ -70,7 +71,7 @@ public class MovieProvider extends ContentProvider {
         if (sUriMatcher.match(uri) == MOVIE) {
             return MovieContract.MovieEntry.CONTENT_TYPE;
         } else {
-            throw new UnsupportedOperationException("Uknown uri: " + uri);
+            throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
 
     }
@@ -106,6 +107,7 @@ public class MovieProvider extends ContentProvider {
         Uri returnUri;
 
         if (sUriMatcher.match(uri) == MOVIE) {
+            Log.d("TESTING", "Values: " + values.toString());
             long _id = db.insert(MovieContract.MovieEntry.TABLE_NAME, null, values);
             if (_id > 0) {
                 returnUri = MovieContract.MovieEntry.buildMovieUri(_id);
@@ -169,6 +171,7 @@ public class MovieProvider extends ContentProvider {
             int returnCount = 0;
             try {
                 for (ContentValues value : values) {
+                    Log.d("TESTING", "Value: " + value.toString());
                     long _id = db.insert(MovieContract.MovieEntry.TABLE_NAME, null, value);
                     if (_id != -1) {
                         returnCount++;

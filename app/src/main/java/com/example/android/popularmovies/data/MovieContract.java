@@ -36,9 +36,8 @@ public class MovieContract {
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }
 
-        public static Uri buildMovieWithSort(String sortSetting, String title) {
-            return CONTENT_URI.buildUpon().appendPath(sortSetting)
-                    .appendPath(title).build();
+        public static Uri buildMovieWithSort(String sortSetting) {
+            return CONTENT_URI.buildUpon().appendPath(sortSetting).build();
         }
 
         public static String getSortFromUri(Uri uri) {

@@ -148,39 +148,47 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     public static void syncImmediately(Context context) {
+        Log.d("TESTING", "In syncImmediately");
         Bundle bundle = new Bundle();
         bundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
         bundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        Log.d("TESTING", "Requesting Sync");
         ContentResolver.requestSync(getSyncAccount(context),
                 context.getString(R.string.content_authority),
                 bundle);
+        Log.d("TESTING", "Done with immediate sync");
     }
 
     public static Account getSyncAccount(Context context) {
+        Log.d("TESTING", "Getting sync account");
         AccountManager accountManager =
                 (AccountManager) context.getSystemService(Context.ACCOUNT_SERVICE);
-
+        Log.d("TESTING", "Creating new account");
         Account newAccount = new Account(
                 context.getString(R.string.app_name),
                 context.getString(R.string.sync_account_type));
-
+        Log.d("TESTING", "Getting password " + accountManager.getPassword(newAccount));
+        Log.d("TESTING", "Password is null " + (accountManager.getPassword(newAccount) == null));
         if (null == accountManager.getPassword(newAccount)) {
+            Log.d("TESTING", "Password null");
             if (!accountManager.addAccountExplicitly(newAccount, "", null)) {
+                Log.d("TESTING", "Failed to add new account");
                 return null;
             }
-
             onAccountCreated(newAccount, context);
         }
+        Log.d("TESTING", "Returning new account " + newAccount.toString());
         return newAccount;
     }
 
     private static void onAccountCreated(Account newAccount, Context context) {
+        Log.d("TESTING", "In onAccountCreated");
         PopularMoviesSyncAdapter.configurePeriodicSync(context, SYNC_INTERVAL, SYNC_FLEXTIME);
-
+        Log.d("TESTING", "Setting sync time");
         ContentResolver.setSyncAutomatically(newAccount,
                 context.getString(R.string.content_authority),
                 true);
-
+        Log.d("TESTING", "Syncing immediately from creating the account");
         syncImmediately(context);
     }
 
