@@ -4,6 +4,7 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.net.Uri;
 import android.provider.BaseColumns;
+import android.util.Log;
 
 /**
  * Created by Matt on 9/8/2016.
@@ -33,6 +34,7 @@ public class MovieContract {
         public static final String COLUMN_RELEASE_DATE = "release_date";
 
         public static Uri buildMovieUri(long id) {
+            Log.d("TESTING", "Building Uri for " + id);
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }
 

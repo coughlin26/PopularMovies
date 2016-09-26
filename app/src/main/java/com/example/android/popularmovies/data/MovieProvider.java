@@ -83,8 +83,13 @@ public class MovieProvider extends ContentProvider {
                         String[] selectionArgs,
                         String sortOrder) {
         Cursor retCursor;
+        Log.d("TESTING", "Querying for " + selection);
+        Thread.currentThread().getStackTrace();
 
         if (sUriMatcher.match(uri) == MOVIE) {
+            Log.d("TESTING", "Projection: " + projection);
+            Log.d("TESTING", "selectionArgs: " + selectionArgs);
+            Log.d("TESTING", "sortOrder: " + sortOrder);
             retCursor = mOpenHelper.getReadableDatabase().query(
                     MovieContract.MovieEntry.TABLE_NAME,
                     projection,
@@ -105,6 +110,8 @@ public class MovieProvider extends ContentProvider {
     public Uri insert(Uri uri, ContentValues values) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         Uri returnUri;
+
+        Log.d("TESTING", "Inserting " + values.toString());
 
         if (sUriMatcher.match(uri) == MOVIE) {
             Log.d("TESTING", "Values: " + values.toString());
@@ -127,6 +134,8 @@ public class MovieProvider extends ContentProvider {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         int rowsDeleted;
 
+        Log.d("TESTING", "Deleting " + selection);
+
         if (selection == null) {
             selection = "1";
         }
@@ -147,6 +156,8 @@ public class MovieProvider extends ContentProvider {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         int rowsUpdated;
 
+        Log.d("TESTING", "Updating " + selection);
+
         if (sUriMatcher.match(uri) == MOVIE) {
             rowsUpdated = db.update(MovieContract.MovieEntry.TABLE_NAME,
                     values,
@@ -166,6 +177,8 @@ public class MovieProvider extends ContentProvider {
     public int bulkInsert(Uri uri, ContentValues[] values) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
 
+        Log.d("TESTING", "Bulk Insert " + values);
+
         if (sUriMatcher.match(uri) == MOVIE) {
             db.beginTransaction();
             int returnCount = 0;
@@ -177,10 +190,12 @@ public class MovieProvider extends ContentProvider {
                         returnCount++;
                     }
                 }
+                Log.d("TESTING", "Transaction Successful");
                 db.setTransactionSuccessful();
             } finally {
                 db.endTransaction();
             }
+            Log.d("TESTING", "Notifying change. Count is " + returnCount);
             getContext().getContentResolver().notifyChange(uri, null);
             return returnCount;
         } else {
@@ -192,6 +207,7 @@ public class MovieProvider extends ContentProvider {
     @Override
     @TargetApi(11)
     public void shutdown() {
+        Log.d("TESTING", "Shutting Down");
         mOpenHelper.close();
         super.shutdown();
     }

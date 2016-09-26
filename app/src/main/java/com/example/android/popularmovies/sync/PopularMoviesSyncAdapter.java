@@ -5,6 +5,7 @@ import android.accounts.AccountManager;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SyncRequest;
 import android.content.SyncResult;
@@ -17,6 +18,7 @@ import com.example.android.popularmovies.BuildConfig;
 import com.example.android.popularmovies.Movie;
 import com.example.android.popularmovies.R;
 import com.example.android.popularmovies.Utility;
+import com.example.android.popularmovies.data.MovieContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,6 +30,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Vector;
 
 /**
  * Created by Matt on 8/14/2016.
@@ -72,7 +75,7 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
 
             URL url = new URL(builder.build().toString());
 
-            Log.v(LOG_TAG, "The url is: " + url);
+            Log.d("TESTING", "The url is: " + url);
 
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
@@ -96,8 +99,12 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
             }
 
             movieJsonStr = buffer.toString();
+            getMoviesFromJson(movieJsonStr);
         } catch (IOException e) {
-            Log.e("MovieFragment", "Error ", e);
+            Log.e(LOG_TAG, "Error ", e);
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, e.getMessage(), e);
+            e.printStackTrace();
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -106,32 +113,69 @@ public class PopularMoviesSyncAdapter extends AbstractThreadedSyncAdapter {
                 try {
                     reader.close();
                 } catch (final IOException e) {
-                    Log.e("MovieFragment", "Error ", e);
+                    Log.e(LOG_TAG, "Error closing stream", e);
                 }
             }
         }
-
-        return;
     }
 
-    private Movie[] getMoviesFromJson(String moviesJsonStr) throws JSONException {
+    private void getMoviesFromJson(String moviesJsonStr) throws JSONException {
 
-        JSONObject moviesJson = new JSONObject(moviesJsonStr);
-        JSONArray moviesArray = moviesJson.getJSONArray("results");
+        final String MDB_TITLE = "title";
+        final String MDB_DESCRIPTION = "overview";
+        final String MDB_POSTER_PATH = "poster_path";
+        final String MDB_RATING = "vote_average";
+        final String MDB_RELEASE_DATE = "release_date";
+        final String MDB_LIST = "results";
 
-        Movie[] movies = new Movie[moviesArray.length()];
+        try {
+            JSONObject moviesJson = new JSONObject(moviesJsonStr);
+            JSONArray moviesArray = moviesJson.getJSONArray(MDB_LIST);
 
-        for (int i = 0; i < moviesArray.length(); i++) {
-            JSONObject jsonMovie = moviesArray.getJSONObject(i);
+            Vector<ContentValues> cVVector = new Vector<ContentValues>(moviesArray.length());
 
-            movies[i] = new Movie(jsonMovie.getString("title"),
-                    jsonMovie.getString("overview"),
-                    jsonMovie.getString("poster_path"),
-                    jsonMovie.getString("vote_average"),
-                    jsonMovie.getString("release_date"));
+            Movie[] movies = new Movie[moviesArray.length()];
+
+            for (int i = 0; i < moviesArray.length(); i++) {
+                String title;
+                String description;
+                String posterPath;
+                String rating;
+                String releaseDate;
+
+                JSONObject jsonMovie = moviesArray.getJSONObject(i);
+
+                title = jsonMovie.getString(MDB_TITLE);
+                description = jsonMovie.getString(MDB_DESCRIPTION);
+                posterPath = jsonMovie.getString(MDB_POSTER_PATH);
+                rating = jsonMovie.getString(MDB_RATING);
+                releaseDate = jsonMovie.getString(MDB_RELEASE_DATE);
+
+                ContentValues movieValues = new ContentValues();
+
+                movieValues.put(MovieContract.MovieEntry.COLUMN_TITLE, title);
+                movieValues.put(MovieContract.MovieEntry.COLUMN_DESC, description);
+                movieValues.put(MovieContract.MovieEntry.COLUMN_POSTER_LOC, posterPath);
+                movieValues.put(MovieContract.MovieEntry.COLUMN_USER_RATING, rating);
+                movieValues.put(MovieContract.MovieEntry.COLUMN_RELEASE_DATE, releaseDate);
+
+                cVVector.add(movieValues);
+            }
+
+            if (cVVector.size() > 0) {
+                ContentValues[] cvArray = new ContentValues[cVVector.size()];
+                cVVector.toArray(cvArray);
+                Log.d("TESTING", "Starting bulk insert");
+                getContext().getContentResolver().bulkInsert(MovieContract.MovieEntry.CONTENT_URI,
+                        cvArray);
+            }
+
+            Log.d("TESTING", "Sync Complete. " + cVVector.size() + " Inserted");
+
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, e.getMessage(), e);
+            e.printStackTrace();
         }
-
-        return movies;
     }
 
     public static void configurePeriodicSync(Context context, int syncInterval, int flexTime) {

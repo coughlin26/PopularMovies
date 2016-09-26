@@ -3,6 +3,7 @@ package com.example.android.popularmovies;
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -50,7 +51,7 @@ public class MovieAdapter extends CursorAdapter {
         String posterSize = "w780";
         String posterUrl = baseUrl + posterSize +
                 cursor.getString(MainActivityFragment.COL_POSTER_LOC);
-
+        Log.d("TESTING", "Poster URL is " + posterUrl);
         Picasso.with(context).load(posterUrl).into(viewHolder.posterView);
     }
 }
