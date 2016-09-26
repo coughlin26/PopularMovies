@@ -75,8 +75,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 if (cursor != null) {
                     String sortSetting = Utility.getPreferredSort(getActivity());
                     ((Callback) getActivity())
-                            .onItemSelected(MovieContract.MovieEntry.buildMovieWithSort(
-                                    sortSetting
+                            .onItemSelected(MovieContract.MovieEntry.buildMovieIDUri(
+                                    cursor.getInt(COL_MOVIE_ID)
                             ));
                 }
                 mPosition = position;
@@ -137,6 +137,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        mMovieAdapter.swapCursor(data);
         if (mPosition != GridView.INVALID_POSITION) {
             mGridView.smoothScrollToPosition(mPosition);
         }

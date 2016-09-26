@@ -38,6 +38,10 @@ public class MovieContract {
             return ContentUris.withAppendedId(CONTENT_URI, id);
         }
 
+        public static Uri buildMovieIDUri(int id) {
+            return CONTENT_URI.buildUpon().appendPath(Integer.toString(id)).build();
+        }
+
         public static Uri buildMovieWithSort(String sortSetting) {
             return CONTENT_URI.buildUpon().appendPath(sortSetting).build();
         }
