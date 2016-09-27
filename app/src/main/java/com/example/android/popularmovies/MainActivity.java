@@ -1,12 +1,15 @@
 package com.example.android.popularmovies;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class MainActivity extends AppCompatActivity {
+import com.example.android.popularmovies.sync.PopularMoviesSyncAdapter;
+
+public class MainActivity extends ActionBarActivity implements MainActivityFragment.Callback {
 
     private final String LOG_TAG = MainActivity.class.getSimpleName();
 
@@ -20,6 +23,8 @@ public class MainActivity extends AppCompatActivity {
                     .add(R.id.container, new MainActivityFragment())
                     .commit();
         }
+
+        PopularMoviesSyncAdapter.initializeSyncAdapter(this);
 
     }
 
@@ -48,5 +53,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    public void onItemSelected(Uri contentUri) {
+        Intent intent = new Intent(this, DetailActivity.class).setData(contentUri);
+        startActivity(intent);
     }
 }

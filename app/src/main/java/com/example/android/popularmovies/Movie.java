@@ -5,8 +5,8 @@ package com.example.android.popularmovies;
  */
 public class Movie {
     String title;
-    String description;
     String posterLocation;
+    String description;
     String userRating;
     String releaseDate;
 
@@ -16,8 +16,8 @@ public class Movie {
                  String userRating,
                  String releaseDate) {
         this.title = title;
-        this.description = description;
         this.posterLocation = posterLocation;
+        this.description = description;
         this.userRating = userRating;
         this.releaseDate = releaseDate;
     }
