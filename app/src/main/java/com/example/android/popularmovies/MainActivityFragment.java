@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +34,6 @@ import java.util.Arrays;
 public class MainActivityFragment extends Fragment {
 
     // This has been removed for the upload. Add your own if you would like to test it.
-    private final String MY_API_KEY = "";
 
     private MovieAdapter mMovieAdapter;
 
@@ -51,7 +51,7 @@ public class MainActivityFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         Movie[] movies = {
-                new Movie("Null", "Null", "Null", "Null", "Null")
+                new Movie("Null", "Null", "Null", "Null", "Null", "Null", null, null)
         };
 
         ArrayList<Movie> movieArrayList = new ArrayList<>(Arrays.asList(movies));
@@ -63,22 +63,27 @@ public class MainActivityFragment extends Fragment {
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String movieID = mMovieAdapter.getItem(position).id;
                 String title = mMovieAdapter.getItem(position).title;
                 String description = mMovieAdapter.getItem(position).description;
                 String posterLocation = mMovieAdapter.getItem(position).posterLocation;
                 String userRating = "Average Rating: " + mMovieAdapter.getItem(position).userRating;
                 String releaseDate = "Release: " + mMovieAdapter.getItem(position).releaseDate;
+                Review[] reviews = mMovieAdapter.getItem(position).reviews;
+                Trailer[] trailers = mMovieAdapter.getItem(position).trailers;
 
                 Bundle extrasBundle = new Bundle();
+                extrasBundle.putString("EXTRA_ID", movieID);
                 extrasBundle.putString("EXTRA_TITLE", title);
                 extrasBundle.putString("EXTRA_DESCRIPTION", description);
                 extrasBundle.putString("EXTRA_POSTER", posterLocation);
                 extrasBundle.putString("EXTRA_USER_RATING", userRating);
                 extrasBundle.putString("EXTRA_RELEASE_DATE", releaseDate);
-
+                //extrasBundle.putString("EXTRA_REVIEW", review);
+                //extrasBundle.putString("EXTRA_TRAILER", video);
 
                 Intent detailIntent = new Intent(getActivity(), DetailActivity.class)
-                        .putExtras(extrasBundle);
+                        .putExtras(extrasBundle).putExtra("EXTRA_REVIEWS", reviews);
                 startActivity(detailIntent);
             }
         });
@@ -115,26 +120,6 @@ public class MainActivityFragment extends Fragment {
     public class FetchMoviesTask extends AsyncTask<String, Void, Movie[]> {
         private final String LOG_TAG = FetchMoviesTask.class.getSimpleName();
 
-        private Movie[] getMoviesFromJson(String moviesJsonStr) throws JSONException {
-
-            JSONObject moviesJson = new JSONObject(moviesJsonStr);
-            JSONArray moviesArray = moviesJson.getJSONArray("results");
-
-            Movie[] movies = new Movie[moviesArray.length()];
-
-            for (int i = 0; i < moviesArray.length(); i++) {
-                JSONObject jsonMovie = moviesArray.getJSONObject(i);
-
-                movies[i] = new Movie(jsonMovie.getString("title"),
-                        jsonMovie.getString("overview"),
-                        jsonMovie.getString("poster_path"),
-                        jsonMovie.getString("vote_average"),
-                        jsonMovie.getString("release_date"));
-            }
-
-            return movies;
-        }
-
         @Override
         protected Movie[] doInBackground(String... params) {
             HttpURLConnection urlConnection = null;
@@ -157,7 +142,7 @@ public class MainActivityFragment extends Fragment {
                         .appendPath("discover")
                         .appendPath("movie")
                         .appendQueryParameter("sort_by", sortOrder)
-                        .appendQueryParameter("api_key", MY_API_KEY);
+                        .appendQueryParameter("api_key", BuildConfig.MOVIE_DB_API_KEY);
 
                 URL url = new URL(builder.build().toString());
 
@@ -184,9 +169,15 @@ public class MainActivityFragment extends Fragment {
                     return null;
                 }
 
-                movieJsonStr = buffer.toString();
-            } catch (IOException e) {
-                Log.e("MovieFragment", "Error ", e);
+                JSONObject moviesJson = new JSONObject(buffer.toString());
+                JSONArray moviesArray = moviesJson.getJSONArray("results");
+                Movie[] movies = new Movie[moviesArray.length()];
+
+                BuildMovies(buffer, movies, moviesArray);
+
+                return movies;
+            } catch (IOException|JSONException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -199,13 +190,6 @@ public class MainActivityFragment extends Fragment {
                     }
                 }
             }
-
-            try {
-                return getMoviesFromJson(movieJsonStr);
-            } catch (JSONException e) {
-                Log.e(LOG_TAG, e.getMessage(), e);
-                e.printStackTrace();
-            }
             return null;
         }
 
@@ -216,6 +200,234 @@ public class MainActivityFragment extends Fragment {
                 for (Movie movie : result) {
                     mMovieAdapter.add(movie);
                 }
+            }
+        }
+
+        private Movie[] GetVideosAndReviews(StringBuffer buffer) {
+            Uri.Builder builder = new Uri.Builder();
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            URL url;
+            try {
+                JSONObject moviesJson = new JSONObject(buffer.toString());
+                JSONArray moviesArray = moviesJson.getJSONArray("results");
+
+                Movie[] movies = new Movie[moviesArray.length()];
+                int movieID;
+                String[] queries = {"reviews", "videos"};
+
+                Log.d(LOG_TAG, "Buffer: " + buffer.toString());
+
+                for (int i = 0; i < moviesArray.length(); i++) {
+                    for (String query : queries) {
+                        movieID = moviesArray.getJSONObject(i).getInt("id");
+                        Log.d("TESTING", "Movie ID: " + movieID);
+
+                        try {
+                            builder.scheme("http")
+                                    .authority("api.themoviedb.org")
+                                    .appendPath("3")
+                                    .appendPath("movie")
+                                    .appendPath(Integer.toString(movieID))
+                                    .appendPath(query)
+                                    .appendQueryParameter("api_key", BuildConfig.MOVIE_DB_API_KEY);
+                        } catch (NullPointerException e) {
+                            Log.e(LOG_TAG, e.getMessage(), e);
+                            Log.d("TESTING", query + " Not Available");
+                            moviesArray.getJSONObject(i).put(query, "Not Available");
+                            continue;
+                        }
+
+                        url = new URL(builder.build().toString());
+
+                        Log.v(LOG_TAG, "The url is: " + url);
+
+                        try {
+                            urlConnection = (HttpURLConnection) url.openConnection();
+                            urlConnection.setRequestMethod("GET");
+                            urlConnection.connect();
+
+                            InputStream inputStream = urlConnection.getInputStream();
+                            StringBuffer stringBuffer = new StringBuffer();
+                            if (inputStream == null) {
+                                return null;
+                            }
+
+                            reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                stringBuffer.append(line + "\n");
+                            }
+
+                            moviesArray.getJSONObject(i).put(query, stringBuffer.toString());
+                        } catch (IOException e) {
+                            Log.e(LOG_TAG, "Error in connection: " + e.getMessage(), e);
+                        } finally {
+                            if (urlConnection != null) {
+                                urlConnection.disconnect();
+                            }
+                            if (reader != null) {
+                                try {
+                                    reader.close();
+                                } catch (final IOException e) {
+                                    Log.e("MovieFragment", "Error ", e);
+                                }
+                            }
+                            if (builder != null) {
+                                builder = null;
+                            }
+                            if (url != null) {
+                                url = null;
+                            }
+                        }
+                    }
+                }
+
+                return movies;
+
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, "JSON Error: " + e.getMessage(), e);
+                return null;
+            } catch (MalformedURLException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
+                return null;
+            }
+        }
+
+        private void BuildMovies(StringBuffer buffer, Movie[] movies, JSONArray moviesArray) {
+            for (int i = 0; i < moviesArray.length(); i++) {
+                try {
+                    JSONObject jsonMovie = moviesArray.getJSONObject(i);
+                    int movieID = moviesArray.getJSONObject(i).getInt("id");
+                    Log.d("TESTING", "Movie ID: " + movieID);
+
+                    JSONArray reviewArray = GetReviewsOrVideos("reviews", buffer, movieID);
+                    JSONArray videosArray = GetReviewsOrVideos("videos", buffer, movieID);
+                    Review[] reviews = {new Review("Null", "Null", "Null", "Null")};
+                    Trailer[] trailers = {new Trailer("Null", "Null", "Null", "Null")};
+
+                    movies[i] = new Movie(jsonMovie.getString("id"),
+                            jsonMovie.getString("title"),
+                            jsonMovie.getString("overview"),
+                            jsonMovie.getString("poster_path"),
+                            jsonMovie.getString("vote_average"),
+                            jsonMovie.getString("release_date"),
+                            reviews,
+                            trailers);
+
+                    if (reviewArray != null) {
+                        reviews = new Review[reviewArray.length()];
+
+                        for (int j = 0; i < reviewArray.length(); i++) {
+                            JSONObject reviewObject = reviewArray.getJSONObject(j);
+
+                            String id = reviewObject.getString("id");
+                            String author = reviewObject.getString("author");
+                            String content = reviewObject.getString("content");
+                            String reviewUrl = reviewObject.getString("url");
+
+                            reviews[j] = new Review(id, author, content, reviewUrl);
+                        }
+                    }
+                    if (videosArray != null) {
+                        trailers = new Trailer[videosArray.length()];
+
+                        for (int j = 0; j < videosArray.length(); j++) {
+                            JSONObject trailerObject = videosArray.getJSONObject(j);
+
+                            String id = trailerObject.getString("id");
+                            String key = trailerObject.getString("key");
+                            String name = trailerObject.getString("name");
+                            String site = trailerObject.getString("site");
+
+                            trailers[j] = new Trailer(id, key, name, site);
+                        }
+
+                        movies[i].reviews = reviews;
+                        movies[i].trailers = trailers;
+                    }
+                } catch (JSONException e) {
+                    Log.e(LOG_TAG, e.getMessage(), e);
+                }
+            }
+        }
+
+        private JSONArray GetReviewsOrVideos(String query, StringBuffer buffer, int movieID) {
+            Uri.Builder builder = new Uri.Builder();
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            URL url;
+            JSONArray returnArray = null;
+
+            if (!query.equals("reviews") && !query.equals("videos")) {
+                Log.e(LOG_TAG, "Incorrect parameter: " + query);
+                return null;
+            }
+
+            try {
+                Log.d(LOG_TAG, "Buffer: " + buffer.toString());
+
+                try {
+                    builder.scheme("http")
+                            .authority("api.themoviedb.org")
+                            .appendPath("3")
+                            .appendPath("movie")
+                            .appendPath(Integer.toString(movieID))
+                            .appendPath(query)
+                            .appendQueryParameter("api_key", BuildConfig.MOVIE_DB_API_KEY);
+                } catch (NullPointerException e) {
+                    Log.e(LOG_TAG, e.getMessage(), e);
+                    return new JSONArray("{\"id\":\"Not Available\"}");
+                }
+
+                url = new URL(builder.build().toString());
+
+                Log.v(LOG_TAG, "The url is: " + url);
+
+                try {
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.connect();
+
+                    InputStream inputStream = urlConnection.getInputStream();
+                    StringBuffer stringBuffer = new StringBuffer();
+                    if (inputStream == null) {
+                        return null;
+                    }
+
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        stringBuffer.append(line + "\n");
+                    }
+
+                    returnArray = new JSONArray(stringBuffer.toString());
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "Error in connection: " + e.getMessage(), e);
+                } finally {
+                    if (urlConnection != null) {
+                        urlConnection.disconnect();
+                    }
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (final IOException e) {
+                            Log.e(LOG_TAG, e.getMessage(), e);
+                        }
+                    }
+                    if (builder != null) {
+                        builder = null;
+                    }
+                    if (url != null) {
+                        url = null;
+                    }
+                    return returnArray;
+                }
+            } catch (JSONException | MalformedURLException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
+                return null;
             }
         }
     }

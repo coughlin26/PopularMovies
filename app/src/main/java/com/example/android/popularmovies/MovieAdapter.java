@@ -32,7 +32,7 @@ public class MovieAdapter extends ArrayAdapter<Movie> {
         }
 
         String baseUrl = "http://image.tmdb.org/t/p/";
-        String posterSize = "w185";
+        String posterSize = "w500";
         String posterUrl = baseUrl + posterSize + movie.posterLocation;
 
         ImageView posterView = (ImageView) convertView.findViewById(R.id.grid_item_poster_imageview);
