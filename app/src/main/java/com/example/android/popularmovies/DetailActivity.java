@@ -92,7 +92,7 @@ public class DetailActivity extends AppCompatActivity {
             ImageView posterView = (ImageView) rootView.findViewById(R.id.detail_poster);
             Picasso.with(getContext()).load(posterUrl).into(posterView);
 
-            Review[] reviews = (Review[]) intent.getParcelableExtra("EXTRA_REVIEWS");
+            Review[] reviews = (Review[]) intent.getParcelableArrayExtra("EXTRA_REVIEWS");
             Log.i("TESTING", "Reviews: " + reviews.toString());
 
             ArrayList<Review> reviewList = new ArrayList<>(Arrays.asList(reviews));

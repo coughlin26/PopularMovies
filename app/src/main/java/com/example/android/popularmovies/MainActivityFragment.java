@@ -79,11 +79,10 @@ public class MainActivityFragment extends Fragment {
                 extrasBundle.putString("EXTRA_POSTER", posterLocation);
                 extrasBundle.putString("EXTRA_USER_RATING", userRating);
                 extrasBundle.putString("EXTRA_RELEASE_DATE", releaseDate);
-                //extrasBundle.putString("EXTRA_REVIEW", review);
-                //extrasBundle.putString("EXTRA_TRAILER", video);
+                extrasBundle.putParcelableArray("EXTRA_REVIEWS", reviews);
 
                 Intent detailIntent = new Intent(getActivity(), DetailActivity.class)
-                        .putExtras(extrasBundle).putExtra("EXTRA_REVIEWS", reviews);
+                        .putExtras(extrasBundle);
                 startActivity(detailIntent);
             }
         });
@@ -125,7 +124,6 @@ public class MainActivityFragment extends Fragment {
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
 
-            String movieJsonStr = null;
             String sortOrder = null;
 
             if (params[0].equals(getString(R.string.pref_sort_popular))) {
@@ -186,7 +184,7 @@ public class MainActivityFragment extends Fragment {
                     try {
                         reader.close();
                     } catch (final IOException e) {
-                        Log.e("MovieFragment", "Error ", e);
+                        Log.e(LOG_TAG, "Error ", e);
                     }
                 }
             }
