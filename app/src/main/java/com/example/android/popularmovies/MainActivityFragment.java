@@ -60,29 +60,12 @@ public class MainActivityFragment extends Fragment {
 
         GridView gridView = (GridView) rootView.findViewById(R.id.gridview_movies);
         gridView.setAdapter(mMovieAdapter);
+        Log.d("TESTING", "Movie 0: " + mMovieAdapter.getItem(0).title);
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String movieID = mMovieAdapter.getItem(position).id;
-                String title = mMovieAdapter.getItem(position).title;
-                String description = mMovieAdapter.getItem(position).description;
-                String posterLocation = mMovieAdapter.getItem(position).posterLocation;
-                String userRating = "Average Rating: " + mMovieAdapter.getItem(position).userRating;
-                String releaseDate = "Release: " + mMovieAdapter.getItem(position).releaseDate;
-                Review[] reviews = mMovieAdapter.getItem(position).reviews;
-                Trailer[] trailers = mMovieAdapter.getItem(position).trailers;
-
-                Bundle extrasBundle = new Bundle();
-                extrasBundle.putString("EXTRA_ID", movieID);
-                extrasBundle.putString("EXTRA_TITLE", title);
-                extrasBundle.putString("EXTRA_DESCRIPTION", description);
-                extrasBundle.putString("EXTRA_POSTER", posterLocation);
-                extrasBundle.putString("EXTRA_USER_RATING", userRating);
-                extrasBundle.putString("EXTRA_RELEASE_DATE", releaseDate);
-                extrasBundle.putParcelableArray("EXTRA_REVIEWS", reviews);
-
                 Intent detailIntent = new Intent(getActivity(), DetailActivity.class)
-                        .putExtras(extrasBundle);
+                        .putExtra("EXTRA_MOVIE", mMovieAdapter.getItem(position));
                 startActivity(detailIntent);
             }
         });
@@ -127,9 +110,9 @@ public class MainActivityFragment extends Fragment {
             String sortOrder = null;
 
             if (params[0].equals(getString(R.string.pref_sort_popular))) {
-                sortOrder = "popularity.desc";
+                sortOrder = "popular";
             } else if (params[0].equals(getString(R.string.pref_sort_rating))) {
-                sortOrder = "vote_average.desc";
+                sortOrder = "top_rated";
             }
 
             try {
@@ -137,9 +120,8 @@ public class MainActivityFragment extends Fragment {
                 builder.scheme("http")
                         .authority("api.themoviedb.org")
                         .appendPath("3")
-                        .appendPath("discover")
                         .appendPath("movie")
-                        .appendQueryParameter("sort_by", sortOrder)
+                        .appendPath(sortOrder)
                         .appendQueryParameter("api_key", BuildConfig.MOVIE_DB_API_KEY);
 
                 URL url = new URL(builder.build().toString());
@@ -171,7 +153,22 @@ public class MainActivityFragment extends Fragment {
                 JSONArray moviesArray = moviesJson.getJSONArray("results");
                 Movie[] movies = new Movie[moviesArray.length()];
 
-                BuildMovies(buffer, movies, moviesArray);
+                //BuildMovies(buffer, movies, moviesArray);
+                Review[] reviews = {new Review("Null", "Null", "Null", "Null")};
+                Trailer[] trailers = {new Trailer("Null", "Null", "Null", "Null")};
+
+                for (int i = 0; i < moviesArray.length(); i++) {
+                    JSONObject jsonMovie = moviesArray.getJSONObject(i);
+
+                    movies[i] = new Movie(jsonMovie.getString("id"),
+                            jsonMovie.getString("title"),
+                            jsonMovie.getString("overview"),
+                            jsonMovie.getString("poster_path"),
+                            jsonMovie.getString("vote_average"),
+                            jsonMovie.getString("release_date"),
+                            reviews,
+                            trailers);
+                }
 
                 return movies;
             } catch (IOException|JSONException e) {
@@ -225,7 +222,7 @@ public class MainActivityFragment extends Fragment {
                     if (reviewArray != null) {
                         reviews = new Review[reviewArray.length()];
 
-                        for (int j = 0; i < reviewArray.length(); i++) {
+                        for (int j = 0; j < reviewArray.length(); j++) {
                             JSONObject reviewObject = reviewArray.getJSONObject(j);
 
                             String id = reviewObject.getString("id");
