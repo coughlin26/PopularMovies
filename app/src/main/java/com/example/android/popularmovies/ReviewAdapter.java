@@ -1,6 +1,7 @@
 package com.example.android.popularmovies;
 
 import android.app.Activity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +32,7 @@ public class ReviewAdapter extends ArrayAdapter<Review> {
         }
 
         TextView reviewContentView = (TextView) convertView.findViewById(R.id.list_item_review);
+        Log.d("TESTING", "Content: " + review.content);
         reviewContentView.setText(review.content);
 
         return convertView;

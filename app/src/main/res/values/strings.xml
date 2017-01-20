@@ -5,6 +5,7 @@
     <string name="poster_description">The movie poster</string>
     <string name="title_activity_settings">Settings</string>
 
+    <string name="title_reviews">Reviews</string>
     <string name="title_trailers">Trailers:</string>
 
     <!-- Strings related to Settings -->

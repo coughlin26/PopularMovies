@@ -51,7 +51,7 @@ public class MainActivityFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         Movie[] movies = {
-                new Movie("Null", "Null", "Null", "Null", "Null", "Null", null, null)
+                new Movie("Null", "Null", "Null", "Null", "Null", "Null")
         };
 
         ArrayList<Movie> movieArrayList = new ArrayList<>(Arrays.asList(movies));
@@ -60,7 +60,7 @@ public class MainActivityFragment extends Fragment {
 
         GridView gridView = (GridView) rootView.findViewById(R.id.gridview_movies);
         gridView.setAdapter(mMovieAdapter);
-        Log.d("TESTING", "Movie 0: " + mMovieAdapter.getItem(0).title);
+
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -153,10 +153,6 @@ public class MainActivityFragment extends Fragment {
                 JSONArray moviesArray = moviesJson.getJSONArray("results");
                 Movie[] movies = new Movie[moviesArray.length()];
 
-                //BuildMovies(buffer, movies, moviesArray);
-                Review[] reviews = {new Review("Null", "Null", "Null", "Null")};
-                Trailer[] trailers = {new Trailer("Null", "Null", "Null", "Null")};
-
                 for (int i = 0; i < moviesArray.length(); i++) {
                     JSONObject jsonMovie = moviesArray.getJSONObject(i);
 
@@ -165,9 +161,7 @@ public class MainActivityFragment extends Fragment {
                             jsonMovie.getString("overview"),
                             jsonMovie.getString("poster_path"),
                             jsonMovie.getString("vote_average"),
-                            jsonMovie.getString("release_date"),
-                            reviews,
-                            trailers);
+                            jsonMovie.getString("release_date"));
                 }
 
                 return movies;
@@ -215,9 +209,7 @@ public class MainActivityFragment extends Fragment {
                             jsonMovie.getString("overview"),
                             jsonMovie.getString("poster_path"),
                             jsonMovie.getString("vote_average"),
-                            jsonMovie.getString("release_date"),
-                            reviews,
-                            trailers);
+                            jsonMovie.getString("release_date"));
 
                     if (reviewArray != null) {
                         reviews = new Review[reviewArray.length()];
@@ -246,9 +238,6 @@ public class MainActivityFragment extends Fragment {
 
                             trailers[j] = new Trailer(id, key, name, site);
                         }
-
-                        movies[i].reviews = reviews;
-                        movies[i].trailers = trailers;
                     }
                 } catch (JSONException e) {
                     Log.e(LOG_TAG, e.getMessage(), e);
