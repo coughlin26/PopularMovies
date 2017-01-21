@@ -63,21 +63,24 @@
             android:layout_height="wrap_content"
             android:id="@+id/detail_videos"
             android:layout_marginLeft="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginBottom="8dp"
             android:text="@string/title_trailers"/>
 
         <ListView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/listview_video"
-            android:layout_marginLeft="16dp"/>
+            android:layout_marginLeft="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginRight="16dp"/>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/detail_reviews"
             android:text="@string/title_reviews"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="8dp"
             android:layout_marginLeft="16dp"
             android:layout_marginRight="16dp"/>
 
@@ -86,7 +89,8 @@
             android:layout_height="wrap_content"
             android:id="@+id/listview_review"
             android:layout_marginLeft="16dp"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp"
+            android:layout_marginRight="16dp"/>
 
     </LinearLayout>
 </ScrollView>
