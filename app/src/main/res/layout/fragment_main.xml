@@ -7,19 +7,13 @@
 
     <GridView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:id="@+id/gridview_movies"
-        android:columnWidth="90dp"
+        android:columnWidth="200dp"
         android:numColumns="auto_fit"
-        android:verticalSpacing="10dp"
-        android:horizontalSpacing="0dp"
-        android:stretchMode="columnWidth"
         android:gravity="center"
-        android:paddingLeft="38dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp">
-
-
+        android:layout_marginTop="8dp"
+        android:stretchMode="columnWidth">
     </GridView>
 
 </FrameLayout>
