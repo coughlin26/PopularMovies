@@ -15,7 +15,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
@@ -116,7 +115,7 @@ public class DetailActivity extends AppCompatActivity {
 
             updateReviews(movie.id);
 
-            ListView reviewListView = (ListView) rootView.findViewById(R.id.listview_review);
+            NestedListView reviewListView = (NestedListView) rootView.findViewById(R.id.listview_review);
             reviewListView.setAdapter(mReviewAdapter);
             reviewListView.setFocusable(false);
 
@@ -125,7 +124,7 @@ public class DetailActivity extends AppCompatActivity {
 
             updateVideos(movie.id);
 
-            ListView trailerListView = (ListView) rootView.findViewById(R.id.listview_video);
+            NestedListView trailerListView = (NestedListView) rootView.findViewById(R.id.listview_video);
             trailerListView.setAdapter(mTrailerAdapter);
             trailerListView.setFocusable(false);
 
